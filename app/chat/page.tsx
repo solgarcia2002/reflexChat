@@ -4,6 +4,8 @@ import MessageList from '../components/messageList'
 import React, { useState, useEffect } from 'react'
 import io from 'socket.io-client'
 import type { MessageProps } from '../components/message'
+import { useSession, signIn, signOut } from "next-auth/react"
+import ButtonGradient from '../components/buttonGradient'
 const socket = io('http://localhost:3001')
 
 const mockMessages = [
@@ -59,10 +61,12 @@ const mockMessages = [
     dateTime: '04/04/2024 10:15 AM',
     message: 'Let\'s do this'
   }
-  
+
 ]
 
-const ChatPage = () => { 
+const ChatPage = () => {
+  const { data: session } = useSession()
+  const user = session?.user?.name
   const [messages, setMessages] = useState<MessageProps[]>([]);
   const [newMessage, setNewMessage] = useState<string>('');
 
@@ -79,19 +83,21 @@ const ChatPage = () => {
   }, []);
 
   const sendMessage = (): void => {
-    socket.emit('chat message', { userName: 'User', dateTime: new Date().toISOString(), message: newMessage });
+    socket.emit('chat message', { userName: user ?? 'User', dateTime: new Date().toISOString(), message: newMessage });
     setNewMessage('');
   };
 
-
-  console.log(messages)
   return <main className="fixed p-0 h-screen w-screen bg-custom-gradient flex flex-col ">
-    <h1 className="text-5xl text-center text-white uppercase m-5">Chat with US</h1>
+    <div className="flex justify-between items-end m-5">
+      <h1 className="text-5xl text-center text-white uppercase m-5">Chat with US</h1>
+      {session && <button className=" py-2 px-4 rounded flex-1 w-32 " onClick={() => signOut()}>Log Out</button>}
+    </div>
     <div className="flex flex-direction-col">
       <div className='min-w-80'>chat list</div>
-      <div className='flex flex-col flex-grow overflow-hidden  h-[91vh]'>
+      <div className='flex flex-col flex-grow overflow-hidden h-[87vh]'>
+        {!session && <ButtonGradient onClick={() => signIn('github')} title='Log In' maxWidth="max-w-48"/>}
         <MessageList messages={messages} />
-        <ChatForm onChangeInput={(e) => setNewMessage( e.currentTarget.value)} onClickButton={sendMessage}/>
+        <ChatForm onChangeInput={(e) => setNewMessage(e.currentTarget.value)} onClickButton={sendMessage} />
       </div>
 
     </div>
